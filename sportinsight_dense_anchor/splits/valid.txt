@@ -1,0 +1,75 @@
+england_epl/2015-2016/2016-03-02 - 23-00 Liverpool 3 - 0 Manchester City
+germany_bundesliga/2015-2016/2015-11-07 - 17-30 Bayern Munich 4 - 0 VfB Stuttgart
+germany_bundesliga/2016-2017/2016-09-10 - 19-30 RB Leipzig 1 - 0 Dortmund
+england_epl/2016-2017/2016-10-29 - 14-30 Sunderland 1 - 4 Arsenal
+spain_laliga/2014-2015/2015-04-11 - 17-00 Real Madrid 3 - 0 Eibar
+spain_laliga/2015-2016/2016-03-05 - 18-00 Real Madrid 7 - 1 Celta Vigo
+france_ligue-1/2016-2017/2016-09-16 - 21-45 Caen 0 - 6 Paris SG
+italy_serie-a/2015-2016/2015-08-29 - 21-45 AC Milan 2 - 1 Empoli
+france_ligue-1/2016-2017/2017-01-21 - 19-00 Nantes 0 - 2 Paris SG
+italy_serie-a/2015-2016/2015-09-20 - 13-30 Chievo 0 - 1 Inter
+europe_uefa-champions-league/2015-2016/2015-09-15 - 21-45 Paris SG 2 - 0 Malmo FF
+germany_bundesliga/2016-2017/2017-01-21 - 17-30 SV Werder Bremen 1 - 2 Dortmund
+spain_laliga/2016-2017/2017-03-01 - 21-30 Barcelona 6 - 1 Gijon
+europe_uefa-champions-league/2014-2015/2015-04-21 - 21-45 Bayern Munich 6 - 1 FC Porto
+spain_laliga/2016-2017/2017-04-29 - 21-45 Espanyol 0 - 3 Barcelona
+spain_laliga/2016-2017/2016-09-10 - 21-30 Barcelona 1 - 2 Alaves
+england_epl/2016-2017/2016-11-06 - 17-15 Liverpool 6 - 1 Watford
+germany_bundesliga/2014-2015/2015-02-21 - 17-30 Paderborn 0 - 6 Bayern Munich
+italy_serie-a/2016-2017/2016-10-26 - 21-45 Sassuolo 1 - 3 AS Roma
+france_ligue-1/2016-2017/2016-08-28 - 21-45 Monaco 3 - 1 Paris SG
+germany_bundesliga/2015-2016/2016-01-31 - 19-30 Bayern Munich 2 - 0 Hoffenheim
+italy_serie-a/2016-2017/2016-11-06 - 22-45 AS Roma 3 - 0 Bologna
+italy_serie-a/2016-2017/2017-05-07 - 21-45 AC Milan 1 - 4 AS Roma
+italy_serie-a/2016-2017/2017-05-20 - 21-45 Napoli 4 - 1 Fiorentina
+italy_serie-a/2016-2017/2017-04-09 - 16-00 Bologna 0 - 3 AS Roma
+italy_serie-a/2014-2015/2015-04-25 - 19-00 Udinese 2 - 1 AC Milan
+europe_uefa-champions-league/2014-2015/2014-12-10 - 22-45 Bayern Munich 3 - 0 CSKA Moscow
+england_epl/2015-2016/2015-12-26 - 18-00 Chelsea 2 - 2 Watford
+europe_uefa-champions-league/2015-2016/2015-09-15 - 21-45 Sevilla 3 - 0 B. Monchengladbach
+france_ligue-1/2016-2017/2016-09-20 - 22-00 Paris SG 3 - 0 Dijon
+europe_uefa-champions-league/2015-2016/2015-11-04 - 22-45 Lyon 0 - 2 Zenit Petersburg
+spain_laliga/2016-2017/2017-04-02 - 17-15 Real Madrid 3 - 0 Alaves
+europe_uefa-champions-league/2014-2015/2015-03-11 - 22-45 Bayern Munich 7 - 0 Shakhtar Donetsk
+england_epl/2015-2016/2015-11-08 - 19-00 Arsenal 1 - 1 Tottenham
+europe_uefa-champions-league/2015-2016/2015-11-24 - 22-45 Bayern Munich 4 - 0 Olympiakos Piraeus
+italy_serie-a/2016-2017/2017-01-22 - 22-45 AS Roma 1 - 0 Cagliari
+spain_laliga/2016-2017/2017-01-29 - 14-00 Betis 1 - 1 Barcelona
+germany_bundesliga/2016-2017/2017-04-29 - 16-30 Dortmund 0 - 0 FC Koln
+italy_serie-a/2016-2017/2017-02-04 - 22-45 Bologna 1 - 7 Napoli
+spain_laliga/2016-2017/2017-05-21 - 21-00 Malaga 0 - 2 Real Madrid
+europe_uefa-champions-league/2015-2016/2015-09-16 - 21-45 AS Roma 1 - 1 Barcelona
+spain_laliga/2016-2017/2017-01-08 - 22-45 Villarreal 1 - 1 Barcelona
+germany_bundesliga/2014-2015/2015-04-25 - 16-30 Dortmund 2 - 0 Eintracht Frankfurt
+spain_laliga/2015-2016/2015-10-04 - 21-30 Atl. Madrid 1 - 1 Real Madrid
+spain_laliga/2016-2017/2017-05-06 - 21-45 Granada CF 0 - 4 Real Madrid
+spain_laliga/2016-2017/2016-08-21 - 21-15 Real Sociedad 0 - 3 Real Madrid
+germany_bundesliga/2016-2017/2016-12-16 - 22-30 Hoffenheim 2 - 2 Dortmund
+england_epl/2016-2017/2017-01-15 - 19-00 Manchester United 1 - 1 Liverpool
+spain_laliga/2015-2016/2015-11-08 - 18-00 Barcelona 3 - 0 Villarreal
+italy_serie-a/2016-2017/2016-09-10 - 21-45 Palermo 0 - 3 Napoli
+england_epl/2015-2016/2016-01-03 - 16-30 Crystal Palace 0 - 3 Chelsea
+italy_serie-a/2016-2017/2016-10-30 - 17-00 AC Milan 1 - 0 Pescara
+italy_serie-a/2016-2017/2017-01-21 - 22-45 AC Milan 1 - 2 Napoli
+spain_laliga/2016-2017/2017-02-18 - 18-15 Real Madrid 2 - 0 Espanyol
+europe_uefa-champions-league/2015-2016/2015-09-15 - 21-45 Real Madrid 4 - 0 Shakhtar Donetsk
+italy_serie-a/2016-2017/2016-12-17 - 20-00 AC Milan 0 - 0 Atalanta
+europe_uefa-champions-league/2014-2015/2014-12-10 - 22-45 Barcelona 3 - 1 Paris SG
+europe_uefa-champions-league/2016-2017/2016-10-19 - 21-45 Barcelona 4 - 0 Manchester City
+europe_uefa-champions-league/2016-2017/2017-02-14 - 22-45 Paris SG 4 - 0 Barcelona
+england_epl/2016-2017/2016-12-31 - 20-30 Liverpool 1 - 0 Manchester City
+europe_uefa-champions-league/2016-2017/2016-11-23 - 22-45 Celtic 0 - 2 Barcelona
+italy_serie-a/2016-2017/2016-10-23 - 16-00 Crotone 1 - 2 Napoli
+france_ligue-1/2016-2017/2017-05-14 - 22-00 St Etienne 0 - 5 Paris SG
+spain_laliga/2016-2017/2016-11-06 - 14-00 Real Madrid 3 - 0 Leganes
+spain_laliga/2016-2017/2016-10-02 - 17-15 Real Madrid 1 - 1 Eibar
+england_epl/2015-2016/2016-04-09 - 17-00 Swansea 1 - 0 Chelsea
+spain_laliga/2016-2017/2017-03-12 - 18-15 Dep. La Coruna 2 - 1 Barcelona
+spain_laliga/2016-2017/2016-09-21 - 21-00 Real Madrid 1 - 1 Villarreal
+europe_uefa-champions-league/2015-2016/2015-09-29 - 21-45 Lyon 0 - 1 Valencia
+spain_laliga/2014-2015/2015-05-09 - 19-00 Barcelona 2 - 0 Real Sociedad
+europe_uefa-champions-league/2014-2015/2015-03-10 - 22-45 Real Madrid 3 - 4 Schalke
+italy_serie-a/2016-2017/2016-11-26 - 22-45 Empoli 1 - 4 AC Milan
+england_epl/2015-2016/2015-10-17 - 17-00 Chelsea 2 - 0 Aston Villa
+england_epl/2015-2016/2015-12-28 - 20-30 Manchester United 0 - 0 Chelsea
+italy_serie-a/2016-2017/2017-03-04 - 17-00 AS Roma 1 - 2 Napoli

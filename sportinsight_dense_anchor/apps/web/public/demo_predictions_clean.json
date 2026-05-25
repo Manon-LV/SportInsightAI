@@ -1,0 +1,135 @@
+[
+  {
+    "half": 1,
+    "timestamp": 181.9792938232422,
+    "gameTime": "1 - 03:02",
+    "label": "Corner",
+    "score": 0.8219083547592163
+  },
+  {
+    "half": 1,
+    "timestamp": 291.9830017089844,
+    "gameTime": "1 - 04:52",
+    "label": "Corner",
+    "score": 0.8249526619911194
+  },
+  {
+    "half": 1,
+    "timestamp": 666.9774169921875,
+    "gameTime": "1 - 11:07",
+    "label": "Corner",
+    "score": 0.7739275693893433
+  },
+  {
+    "half": 1,
+    "timestamp": 790.002685546875,
+    "gameTime": "1 - 13:10",
+    "label": "Goal",
+    "score": 0.8291302919387817
+  },
+  {
+    "half": 1,
+    "timestamp": 879.9798583984375,
+    "gameTime": "1 - 14:40",
+    "label": "Corner",
+    "score": 0.8208407759666443
+  },
+  {
+    "half": 1,
+    "timestamp": 970.9796752929688,
+    "gameTime": "1 - 16:11",
+    "label": "Corner",
+    "score": 0.8102239966392517
+  },
+  {
+    "half": 1,
+    "timestamp": 1030.976318359375,
+    "gameTime": "1 - 17:11",
+    "label": "Corner",
+    "score": 0.8399603962898254
+  },
+  {
+    "half": 1,
+    "timestamp": 2021.06201171875,
+    "gameTime": "1 - 33:41",
+    "label": "Corner",
+    "score": 0.7846293449401855
+  },
+  {
+    "half": 1,
+    "timestamp": 2408.011474609375,
+    "gameTime": "1 - 40:08",
+    "label": "Yellow card",
+    "score": 0.7869377136230469
+  },
+  {
+    "half": 1,
+    "timestamp": 2544.976806640625,
+    "gameTime": "1 - 42:25",
+    "label": "Corner",
+    "score": 0.8239910006523132
+  },
+  {
+    "half": 2,
+    "timestamp": 325.98919677734375,
+    "gameTime": "2 - 05:26",
+    "label": "Corner",
+    "score": 0.787785530090332
+  },
+  {
+    "half": 2,
+    "timestamp": 448.9873352050781,
+    "gameTime": "2 - 07:29",
+    "label": "Corner",
+    "score": 0.7747899293899536
+  },
+  {
+    "half": 2,
+    "timestamp": 1020.9963989257812,
+    "gameTime": "2 - 17:01",
+    "label": "Yellow card",
+    "score": 0.8272407054901123
+  },
+  {
+    "half": 2,
+    "timestamp": 1263.9881591796875,
+    "gameTime": "2 - 21:04",
+    "label": "Corner",
+    "score": 0.8158936500549316
+  },
+  {
+    "half": 2,
+    "timestamp": 1464.9913330078125,
+    "gameTime": "2 - 24:25",
+    "label": "Yellow card",
+    "score": 0.7773862481117249
+  },
+  {
+    "half": 2,
+    "timestamp": 1504.9881591796875,
+    "gameTime": "2 - 25:05",
+    "label": "Yellow card",
+    "score": 0.7596110105514526
+  },
+  {
+    "half": 2,
+    "timestamp": 2118.9931640625,
+    "gameTime": "2 - 35:19",
+    "label": "Corner",
+    "score": 0.8244420289993286
+  },
+  {
+    "half": 2,
+    "timestamp": 2121.010009765625,
+    "gameTime": "2 - 35:21",
+    "label": "Goal",
+    "score": 0.7044481039047241
+  },
+  {
+    "half": 2,
+    "timestamp": 2415.999755859375,
+    "gameTime": "2 - 40:16",
+    "label": "Corner",
+    "score": 0.8484209179878235
+  }
+]

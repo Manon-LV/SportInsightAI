@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+runs/
+*.pt
+*.pth
+.DS_Store
+node_modules/
+dist/
+apps/api/storage/runs/*
+!apps/api/storage/runs/.gitkeep
+data/
+apps/web/.env
