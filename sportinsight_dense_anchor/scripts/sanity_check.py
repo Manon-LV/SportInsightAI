@@ -9,14 +9,16 @@ from pathlib import Path
 import numpy as np
 import torch
 
-# Allow running from the repository without installation.
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from sportinsight.data import SoccerNetDenseAnchorDataset, dense_anchor_collate
-from sportinsight.losses import DenseAnchorLoss
-from sportinsight.model import DenseAnchorSpotter
+from sportinsight.losses import AsymmetricLoss, DenseAnchorLoss, OHEMLoss, build_loss
+from sportinsight.model import DenseAnchorSpotter, build_model
 from sportinsight.postprocess import nms_predictions, predictions_from_window
+
+
+CLASSES = ["Goal", "Corner", "Yellow card", "Red card"]
 
 
 def create_synthetic_game(root: Path) -> Path:
@@ -28,18 +30,17 @@ def create_synthetic_game(root: Path) -> Path:
     rng = np.random.default_rng(42)
     for half in (1, 2):
         x = rng.normal(0, 0.2, size=(T, D)).astype(np.float32)
-        # Inject simple patterns around fake events.
         if half == 1:
-            x[int(75 * fps):int(80 * fps), :16] += 2.0     # Corner
-            x[int(210 * fps):int(215 * fps), 16:32] += 2.0 # Goal
+            x[int(75 * fps):int(80 * fps), :16] += 2.0
+            x[int(210 * fps):int(215 * fps), 16:32] += 2.0
         if half == 2:
-            x[int(150 * fps):int(155 * fps), 32:48] += 2.0 # Yellow card
+            x[int(150 * fps):int(155 * fps), 32:48] += 2.0
         np.save(game_dir / f"{half}_ResNET_PCA512.npy", x)
 
     labels = {
         "annotations": [
-            {"gameTime": "1 - 01:17", "label": "Corner", "position": "77000", "visibility": "shown"},
-            {"gameTime": "1 - 03:32", "label": "Goal", "position": "212000", "visibility": "shown"},
+            {"gameTime": "1 - 01:17", "label": "Corner",      "position": "77000",  "visibility": "shown"},
+            {"gameTime": "1 - 03:32", "label": "Goal",        "position": "212000", "visibility": "shown"},
             {"gameTime": "2 - 02:32", "label": "Yellow card", "position": "152000", "visibility": "shown"},
         ]
     }
@@ -48,53 +49,116 @@ def create_synthetic_game(root: Path) -> Path:
     return game_dir
 
 
+def _make_model() -> DenseAnchorSpotter:
+    return DenseAnchorSpotter(
+        input_dim=512, hidden_dim=64, num_classes=len(CLASSES),
+        num_layers=2, dropout=0.1,
+    )
+
+
+def _forward_backward(model, criterion, batch):
+    optim = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    outputs = model(batch["x"])
+    losses = criterion(outputs, batch)
+    losses["loss"].backward()
+    optim.step()
+    return losses, outputs
+
+
+def check_dataset(tmp: Path, strategy: str) -> int:
+    ds = SoccerNetDenseAnchorDataset(
+        root=tmp,
+        classes=CLASSES,
+        feature_fps=2.0,
+        window_size_sec=60.0,
+        stride_sec=30.0,
+        positive_radius_sec=2.0,
+        ignore_radius_sec=5.0,
+        imbalance_strategy=strategy,
+        neg_pos_ratio=2.0,
+    )
+    assert len(ds) > 0, f"strategy={strategy}: dataset vide"
+    _ = ds[0]
+    return len(ds)
+
+
+def check_loss(loss_cls, batch):
+    model = _make_model()
+    losses, _ = _forward_backward(model, loss_cls, batch)
+    val = float(losses["loss"].detach())
+    assert val >= 0.0 and not (val != val), f"loss invalide: {val}"
+    return val
+
+
 def main() -> None:
     tmp = Path(tempfile.mkdtemp(prefix="sportinsight_sanity_"))
+    ok = True
     try:
         create_synthetic_game(tmp)
-        classes = ["Goal", "Corner", "Yellow card", "Red card"]
+
+        # ── Dataset strategies ─────────────────────────────────────────────
+        print("\n[1/3] Dataset - strategies de sampling")
+        for strat in ("none", "downsample", "oversample"):
+            n = check_dataset(tmp, strat)
+            print(f"  {strat:<12} -> {n} windows  OK")
+
+        # ── Loss types ─────────────────────────────────────────────────────
+        print("\n[2/3] Loss types (focal / ohem / asl)")
         ds = SoccerNetDenseAnchorDataset(
-            root=tmp,
-            classes=classes,
-            feature_fps=2.0,
-            window_size_sec=60.0,
-            stride_sec=30.0,
-            positive_radius_sec=2.0,
-            ignore_radius_sec=5.0,
+            root=tmp, classes=CLASSES, feature_fps=2.0,
+            window_size_sec=60.0, stride_sec=30.0,
+            positive_radius_sec=2.0, ignore_radius_sec=5.0,
         )
         batch = dense_anchor_collate([ds[0], ds[1]])
-        model = DenseAnchorSpotter(input_dim=512, hidden_dim=64, num_classes=len(classes), num_layers=2, dropout=0.1)
-        criterion = DenseAnchorLoss(class_weights=[1.0, 1.0, 1.5, 3.0])
-        optim = torch.optim.AdamW(model.parameters(), lr=1e-3)
 
-        outputs = model(batch["x"])
-        losses = criterion(outputs, batch)
-        losses["loss"].backward()
-        optim.step()
+        losses_to_test = [
+            ("focal",      DenseAnchorLoss(class_weights=[1.0, 1.0, 1.5, 3.0], focal_gamma=2.0)),
+            ("ohem",       OHEMLoss(ohem_ratio=0.25, class_weights=[1.0, 1.0, 1.5, 3.0], focal_gamma=2.0)),
+            ("asl",        AsymmetricLoss(gamma_pos=1.0, gamma_neg=4.0, prob_shift=0.05, class_weights=[1.0, 1.0, 1.5, 3.0])),
+        ]
+        for name, criterion in losses_to_test:
+            v = check_loss(criterion, batch)
+            print(f"  {name:<12} -> loss={v:.4f}  OK")
 
-        raw = []
-        for i, meta in enumerate(batch["meta"]):
-            raw.extend(
-                predictions_from_window(
-                    outputs["cls_logits"][i],
-                    outputs["offsets"][i],
-                    classes=classes,
-                    half=meta["half"],
-                    start_time_sec=meta["start_time_sec"],
-                    feature_fps=2.0,
-                    score_threshold=0.05,
-                )
-            )
-        final = nms_predictions(raw, classes=classes, radius_sec=6.0, score_threshold=0.05)
+        # ── build_loss factory ─────────────────────────────────────────────
+        print("\n[3/3] build_loss factory (dispatch par config)")
+        for t in ("focal", "ohem", "asl"):
+            cfg = {
+                "loss": {"type": t, "focal_gamma": 2.0, "ohem_ratio": 0.25,
+                         "gamma_pos": 1.0, "gamma_neg": 4.0, "prob_shift": 0.05,
+                         "lambda_cls": 1.0, "lambda_reg": 0.5,
+                         "class_weights": [1.0, 1.0, 1.5, 3.0]}
+            }
+            criterion = build_loss(cfg)
+            v = check_loss(criterion, batch)
+            print(f"  type={t:<8} -> loss={v:.4f}  OK")
 
-        print("Sanity check OK")
-        print(f"Dataset windows: {len(ds)}")
-        print(f"Batch x shape: {tuple(batch['x'].shape)}")
-        print(f"Loss: {float(losses['loss'].detach()):.4f} | cls={float(losses['loss_cls'].detach()):.4f} | reg={float(losses['loss_reg'].detach()):.4f}")
-        print(f"Raw predictions: {len(raw)} | after NMS: {len(final)}")
+        # ── build_model factory (projection on/off) ────────────────────────
+        print("\n[bonus] build_model - projection on/off")
+        for use_proj in (True, False):
+            cfg = {
+                "data": {"classes": CLASSES},
+                "model": {"input_dim": 512, "hidden_dim": 64, "num_layers": 2,
+                          "dropout": 0.1, "backbone": "unet", "max_offset_sec": 5.0,
+                          "use_projection": use_proj},
+            }
+            model = build_model(cfg)
+            out = model(batch["x"])
+            assert out["cls_logits"].shape == (2, batch["x"].shape[1], len(CLASSES))
+            label = "avec proj" if use_proj else "sans proj"
+            print(f"  {label}  OK")
+
+        print("\n" + "=" * 50)
+        print("Sanity check complet - tous les tests OK")
+
+    except Exception as exc:
+        ok = False
+        print(f"\n[ERREUR] {exc}")
+        raise
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-        print("Temporary files removed")
+        if ok:
+            print("Fichiers temporaires supprimés")
 
 
 if __name__ == "__main__":

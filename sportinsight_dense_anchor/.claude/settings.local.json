@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Mathieu Bonneau/Downloads/**)",
+      "Bash(unzip -o plots.zip -d plots_extracted)"
+    ]
+  }
+}

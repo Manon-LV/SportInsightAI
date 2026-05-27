@@ -50,6 +50,11 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--no-videos",
+        action="store_true",
+        help="Ne télécharge pas les fichiers vidéo .mkv (utile si seuls les features et labels sont nécessaires).",
+    )
+    parser.add_argument(
         "--include-features",
         action="store_true",
         help="Télécharge aussi les features PCA512 associées.",
@@ -75,7 +80,8 @@ def selected_video_files(resolution: str) -> list[str]:
 
 def build_files(args: argparse.Namespace) -> list[str]:
     files: list[str] = []
-    files.extend(selected_video_files(args.resolution))
+    if not args.no_videos:
+        files.extend(selected_video_files(args.resolution))
     if args.include_features:
         files.extend(FEATURE_FILES)
     if args.include_labels:

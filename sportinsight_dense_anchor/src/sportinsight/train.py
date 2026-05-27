@@ -39,7 +39,14 @@ def validate_loss(model, criterion, loader, device: torch.device) -> dict[str, f
     return {k: v / max(1, steps) for k, v in running.items()}
 
 
-def _dataset_from_config(data_cfg: dict, classes: list[str], split_file: str | None = None) -> SoccerNetDenseAnchorDataset:
+def _dataset_from_config(
+    data_cfg: dict,
+    classes: list[str],
+    split_file: str | None = None,
+    seed: int = 42,
+    apply_sampling: bool = True,
+) -> SoccerNetDenseAnchorDataset:
+    strategy = str(data_cfg.get("imbalance_strategy", "none")) if apply_sampling else "none"
     return SoccerNetDenseAnchorDataset(
         root=data_cfg["root"],
         split_file=split_file,
@@ -50,6 +57,9 @@ def _dataset_from_config(data_cfg: dict, classes: list[str], split_file: str | N
         positive_radius_sec=float(data_cfg.get("positive_radius_sec", 2.0)),
         ignore_radius_sec=float(data_cfg.get("ignore_radius_sec", 5.0)),
         cache_features=bool(data_cfg.get("cache_features", False)),
+        imbalance_strategy=strategy,
+        neg_pos_ratio=float(data_cfg.get("neg_pos_ratio", 3.0)),
+        rng_seed=seed,
     )
 
 
@@ -69,8 +79,8 @@ def build_train_val_datasets(data_cfg: dict, classes: list[str], seed: int):
         if not integrity["is_disjoint"]:
             raise ValueError(f"Les fichiers de split ne sont pas disjoints : {integrity}")
 
-        train_ds = _dataset_from_config(data_cfg, classes, split_file=train_split_file)
-        val_ds = _dataset_from_config(data_cfg, classes, split_file=val_split_file)
+        train_ds = _dataset_from_config(data_cfg, classes, split_file=train_split_file, seed=seed, apply_sampling=True)
+        val_ds = _dataset_from_config(data_cfg, classes, split_file=val_split_file, seed=seed, apply_sampling=False)
         split_info = {
             "strategy": "match_split_files",
             "train_split_file": train_split_file,
@@ -85,7 +95,7 @@ def build_train_val_datasets(data_cfg: dict, classes: list[str], seed: int):
         return train_ds, val_ds, split_info
 
     # Fallback historique : pratique pour debugger, mais pas un protocole d'évaluation final.
-    dataset = _dataset_from_config(data_cfg, classes, split_file=data_cfg.get("split_file"))
+    dataset = _dataset_from_config(data_cfg, classes, split_file=data_cfg.get("split_file"), seed=seed)
     n = len(dataset)
     n_val = max(1, int(0.15 * n))
     n_train = n - n_val
@@ -116,6 +126,7 @@ def main() -> None:
     seed = int(train_cfg.get("seed", 42))
     set_seed(seed)
     device = get_device(str(train_cfg.get("device", "auto")))
+    print(f"Device : {device}" + (f" ({torch.cuda.get_device_name(device)})" if device.type == "cuda" else ""))
     output_dir = Path(train_cfg.get("output_dir", "runs/dense_anchor"))
     output_dir.mkdir(parents=True, exist_ok=True)
 

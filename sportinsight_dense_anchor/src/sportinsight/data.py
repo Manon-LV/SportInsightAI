@@ -86,6 +86,9 @@ class SoccerNetDenseAnchorDataset(Dataset):
         split_file: str | Path | None = None,
         include_not_shown: bool = True,
         cache_features: bool = False,
+        imbalance_strategy: str = "none",
+        neg_pos_ratio: float = 3.0,
+        rng_seed: int = 42,
     ) -> None:
         self.root = Path(root)
         self.classes = list(classes)
@@ -98,6 +101,9 @@ class SoccerNetDenseAnchorDataset(Dataset):
         self.stride_len = max(1, int(round(self.stride_sec * self.feature_fps)))
         self.include_not_shown = include_not_shown
         self.cache_features = cache_features
+        self.imbalance_strategy = str(imbalance_strategy).lower()
+        self.neg_pos_ratio = float(neg_pos_ratio)
+        self.rng_seed = int(rng_seed)
         self._feature_cache: Dict[tuple[str, int], np.ndarray] = {}
 
         self.game_dirs = find_game_dirs(self.root, split_file)
@@ -108,6 +114,9 @@ class SoccerNetDenseAnchorDataset(Dataset):
         self.feature_paths: Dict[tuple[str, int], Path] = {}
         self.windows: List[WindowIndex] = []
         self._build_index()
+
+        if self.imbalance_strategy != "none":
+            self.windows = self._apply_sampling()
 
         if not self.windows:
             raise RuntimeError("No usable windows were found. Check feature filenames and root path.")
@@ -146,6 +155,40 @@ class SoccerNetDenseAnchorDataset(Dataset):
                             num_frames=n,
                         )
                     )
+
+    def _window_has_event(self, window: WindowIndex) -> bool:
+        start_time = window.start_idx / self.feature_fps
+        end_time = window.end_idx / self.feature_fps
+        for event in filter_events(self.events_by_game.get(window.game_dir, []), half=window.half):
+            if start_time - self.ignore_radius_sec <= event.time_sec <= end_time + self.ignore_radius_sec:
+                return True
+        return False
+
+    def _apply_sampling(self) -> List[WindowIndex]:
+        rng = np.random.default_rng(self.rng_seed)
+        pos = [w for w in self.windows if self._window_has_event(w)]
+        neg = [w for w in self.windows if not self._window_has_event(w)]
+
+        if self.imbalance_strategy == "downsample":
+            target_neg = int(len(pos) * self.neg_pos_ratio)
+            if target_neg < len(neg):
+                idx = rng.choice(len(neg), size=target_neg, replace=False)
+                neg = [neg[i] for i in idx]
+        elif self.imbalance_strategy == "oversample":
+            target_pos = max(len(pos), int(len(neg) / max(self.neg_pos_ratio, 1e-6)))
+            if target_pos > len(pos) > 0:
+                extra = target_pos - len(pos)
+                idx = rng.choice(len(pos), size=extra, replace=True)
+                pos = pos + [pos[i] for i in idx]
+        else:
+            raise ValueError(
+                f"Unknown imbalance_strategy {self.imbalance_strategy!r}. "
+                "Expected 'none', 'downsample', or 'oversample'."
+            )
+
+        combined = pos + neg
+        order = rng.permutation(len(combined))
+        return [combined[i] for i in order]
 
     def __len__(self) -> int:
         return len(self.windows)
