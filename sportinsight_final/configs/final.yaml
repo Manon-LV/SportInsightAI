@@ -1,0 +1,72 @@
+# Version finale — Split officiel SoccerNet, 10 classes
+#
+# Utiliser après avoir généré les splits avec :
+#   python scripts/create_splits_official.py --root data/SoccerNet
+
+data:
+  root: "data/SoccerNet"
+  train_split_file: "splits/train.txt"
+  val_split_file: "splits/valid.txt"
+  test_split_file: "splits/test.txt"
+  classes:
+    - "Goal"
+    - "Corner"
+    - "Yellow card"
+    - "Red card"
+    - "Penalty"
+    - "Substitution"
+    - "Offside"
+    - "Foul"
+    - "Shots on target"
+    - "Shots off target"
+  feature_fps: 2.0
+  window_size_sec: 120.0
+  stride_sec: 60.0
+  positive_radius_sec: 2.0
+  ignore_radius_sec: 5.0
+  imbalance_strategy: "none"
+  cache_features: false
+
+model:
+  input_dim: 512
+  hidden_dim: 128
+  use_projection: true
+  num_layers: 3
+  dropout: 0.30
+  backbone: "unet"
+  max_offset_sec: 5.0
+  use_attention_bottleneck: true   # MHSA au bottleneck → contexte global sur 120s
+  temporal_neck: "gru"             # BiGRU après le décodeur → modélisation séquentielle
+
+loss:
+  type: "focal"
+  lambda_cls: 1.0
+  lambda_reg: 0.5
+  focal_gamma: 1.0                                          # litterature : gamma=1.0-1.2 (vs gamma=2 RetinaNet trop agressif ici)
+  # Poids 1/sqrt(N) calcules sur le split train reel (300 matchs, normalises Foul=1.0)
+  # Counts train : Goal=995 Corner=2884 Ycard=1238 Rcard=34 Penalty=96 Sub=1700 Offside=1265 Foul=7084 SoT=3463 SoffT=3214
+  # Ordre        : Goal  Corner  Ycard  Rcard  Penalty  Sub  Offside  Foul  SoT  SoffT
+  class_weights: [2.7,   1.6,   2.4,   14.4,  8.6,     2.0,   2.4,  1.0,  1.4,  1.5]
+
+train:
+  epochs: 30
+  batch_size: 16
+  num_workers: 0
+  lr: 0.0003
+  weight_decay: 0.0001
+  grad_clip_norm: 1.0
+  seed: 42
+  device: "auto"
+  output_dir: "runs/final"
+  validate_every: 1
+  map_every: 5          # Avg-mAP loose calculé toutes les N epochs (0 = désactivé)
+  plot_every: 1
+
+postprocess:
+  score_threshold: 0.30
+  nms_radius_sec: 6.0
+  max_predictions_per_class: 200
+  use_soft_nms: false
+
+metrics:
+  tolerances_sec: [5.0, 10.0, 20.0, 30.0, 60.0]
