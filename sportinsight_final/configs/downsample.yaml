@@ -1,0 +1,55 @@
+# Expérience 3 — Downsampling des fenêtres négatives, projection 512→256, 4 classes
+data:
+  root: "data/SoccerNet"
+  split_file: null
+  train_split_file: "splits/train.txt"
+  val_split_file: "splits/valid.txt"
+  test_split_file: "splits/test.txt"
+  classes: ["Goal", "Corner", "Yellow card", "Red card"]
+  feature_fps: 2.0
+  window_size_sec: 120.0
+  stride_sec: 60.0
+  positive_radius_sec: 2.0
+  ignore_radius_sec: 5.0
+  imbalance_strategy: "downsample"
+  neg_pos_ratio: 3.0
+  cache_features: false
+
+model:
+  input_dim: 512
+  hidden_dim: 256
+  use_projection: true
+  num_layers: 3
+  dropout: 0.20
+  backbone: "unet"
+  max_offset_sec: 5.0
+
+loss:
+  type: "focal"
+  lambda_cls: 1.0
+  lambda_reg: 0.5
+  focal_gamma: 2.0
+  class_weights: [1.0, 1.0, 1.5, 3.0]
+
+train:
+  epochs: 30
+  batch_size: 16
+  num_workers: 0
+  lr: 0.0003
+  weight_decay: 0.0001
+  grad_clip_norm: 1.0
+  seed: 42
+  device: "auto"
+  output_dir: "runs/downsample"
+  validate_every: 1
+  plot_every: 1
+  max_val_games: null
+
+postprocess:
+  score_threshold: 0.30
+  nms_radius_sec: 6.0
+  max_predictions_per_class: 200
+  use_soft_nms: false
+
+metrics:
+  tolerances_sec: [5.0, 10.0, 20.0, 30.0, 60.0]

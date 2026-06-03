@@ -1,0 +1,79 @@
+# Option B + régularisation renforcée
+#
+# Changements vs calf_10_slim.yaml :
+#   feature_noise_std : 0.0  → 0.03  (bruit gaussien sur features PCA512, train only)
+#   dropout           : 0.30 → 0.35
+#   weight_decay      : 0.01 → 0.02
+#   epochs            : 50   → 20    (early stopping : best_map attendu ~ep 15)
+
+data:
+  root: "data/SoccerNet"
+  train_split_file: "splits/train.txt"
+  val_split_file: "splits/valid.txt"
+  test_split_file: "splits/test.txt"
+  classes:
+    - "Goal"
+    - "Corner"
+    - "Yellow card"
+    - "Red card"
+    - "Penalty"
+    - "Substitution"
+    - "Offside"
+    - "Foul"
+    - "Shots on target"
+    - "Shots off target"
+  feature_fps: 2.0
+  window_size_sec: 120.0
+  stride_sec: 60.0
+  positive_radius_sec: 2.0
+  ignore_radius_sec: 5.0
+  imbalance_strategy: "class_stratified"
+  cache_features: false
+  feature_noise_std: 0.03   # bruit gaussien train uniquement — casse la mémorisation
+
+model:
+  input_dim: 512
+  hidden_dim: 96
+  use_projection: true
+  num_layers: 2
+  dropout: 0.35             # 0.30 → 0.35
+  backbone: "unet"
+  max_offset_sec: 5.0
+  use_attention_bottleneck: true
+  temporal_neck: "none"
+
+loss:
+  type: "calf"
+  margin_before_sec: 20.0
+  positive_radius_sec: 2.0
+  k_before: 0.5
+  k_after: 1.0
+  k_bg: 1.0
+  lambda_cls: 1.0
+  lambda_reg: 0.5
+  focal_gamma: 1.2
+  class_weights: [2.7, 1.6, 2.4, 14.4, 8.6, 2.0, 2.4, 1.0, 1.4, 1.5]
+
+train:
+  epochs: 20                # 50 → 20 : best_map slim était epoch 15
+  batch_size: 16
+  num_workers: 0
+  lr: 0.0003
+  warmup_epochs: 3
+  weight_decay: 0.02        # 0.01 → 0.02
+  grad_clip_norm: 1.0
+  seed: 42
+  device: "auto"
+  output_dir: "runs/calf_10_slim_reg"
+  validate_every: 1
+  map_every: 5
+  plot_every: 1
+
+postprocess:
+  score_threshold: 0.15
+  nms_radius_sec: 6.0
+  max_predictions_per_class: 200
+  use_soft_nms: false
+
+metrics:
+  tolerances_sec: [5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0]

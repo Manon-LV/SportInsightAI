@@ -1,0 +1,16 @@
+{
+  "source": "official_soccernet_split",
+  "complete_halves": true,
+  "official_counts": {
+    "train": 300,
+    "valid": 100,
+    "test": 100
+  },
+  "counts": {
+    "train": 300,
+    "valid": 100,
+    "test": 100,
+    "total": 500
+  },
+  "principle": "Split officiel SoccerNet — aucun match partagé entre ensembles"
+}
