@@ -70,8 +70,9 @@ def compute_ap_for_class(
     return APResult(ap=average_precision(recalls, precisions), precision=precisions, recall=recalls)
 
 
-# Tolérances officielles SoccerNet "loose" : δ = 5, 10, …, 60 s (12 valeurs)
-LOOSE_TOLERANCES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+# Tolérances officielles SoccerNet
+LOOSE_TOLERANCES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]   # δ = 5…60 s (12 valeurs)
+TIGHT_TOLERANCES = [1, 2, 3, 4, 5]                                     # δ = 1…5 s  (5 valeurs)
 
 
 def temporal_map(

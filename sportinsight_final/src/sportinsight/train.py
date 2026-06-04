@@ -8,11 +8,71 @@ import torch
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 
+
+class SAM(torch.optim.Optimizer):
+    """Sharpness-Aware Minimization (Foret et al., 2021).
+
+    Chaque step requiert deux passes forward-backward :
+      1. first_step  : perturbe les poids vers le maximum local (sharpness)
+      2. second_step : met à jour depuis le point perturbé, restaure les poids
+
+    Usage dans la boucle d'entraînement :
+        loss.backward(); optimizer.first_step(zero_grad=True)
+        criterion(model(x), y).backward(); optimizer.second_step(zero_grad=True)
+    """
+
+    def __init__(self, params, base_optimizer_cls, rho: float = 0.05, **base_kwargs):
+        defaults = dict(rho=rho, **base_kwargs)
+        super().__init__(params, defaults)
+        self.base_optimizer = base_optimizer_cls(self.param_groups, **base_kwargs)
+        self.param_groups = self.base_optimizer.param_groups
+        self.defaults.update(self.base_optimizer.defaults)
+
+    @torch.no_grad()
+    def first_step(self, zero_grad: bool = False) -> None:
+        grad_norm = self._grad_norm()
+        for group in self.param_groups:
+            scale = group["rho"] / (grad_norm + 1e-12)
+            for p in group["params"]:
+                if p.grad is None:
+                    continue
+                self.state[p]["old_p"] = p.data.clone()
+                p.add_(p.grad * scale)
+        if zero_grad:
+            self.zero_grad()
+
+    @torch.no_grad()
+    def second_step(self, zero_grad: bool = False) -> None:
+        for group in self.param_groups:
+            for p in group["params"]:
+                if "old_p" in self.state[p]:
+                    p.data = self.state[p]["old_p"]
+        self.base_optimizer.step()
+        if zero_grad:
+            self.zero_grad()
+
+    def step(self, closure=None):
+        raise RuntimeError("SAM: utiliser first_step() puis second_step() explicitement.")
+
+    def _grad_norm(self) -> torch.Tensor:
+        device = self.param_groups[0]["params"][0].device
+        norms = [
+            p.grad.norm(p=2).to(device)
+            for group in self.param_groups
+            for p in group["params"]
+            if p.grad is not None
+        ]
+        return torch.stack(norms).norm(p=2) if norms else torch.tensor(0.0, device=device)
+
+    def load_state_dict(self, state_dict: dict) -> None:
+        super().load_state_dict(state_dict)
+        self.base_optimizer.param_groups = self.param_groups
+
 from .data import ClassStratifiedSampler, SoccerNetDenseAnchorDataset, dense_anchor_collate, find_feature_file, load_features
 from .infer import predict_half
 from .labels import load_events_from_labels
 from .losses import build_loss
-from .metrics import temporal_map, LOOSE_TOLERANCES
+from .metrics import temporal_map, LOOSE_TOLERANCES, TIGHT_TOLERANCES
 from .model import build_model
 from .postprocess import nms_predictions
 from .splits import validate_disjoint_splits
@@ -94,8 +154,13 @@ def validate_map(
         if labels_path.exists():
             all_events.extend(load_events_from_labels(labels_path, classes))
 
-    result = temporal_map(all_preds, all_events, classes=classes, tolerances_sec=LOOSE_TOLERANCES)
-    return {"val_" + k: v for k, v in result.items()}
+    loose = temporal_map(all_preds, all_events, classes=classes, tolerances_sec=LOOSE_TOLERANCES)
+    tight = temporal_map(all_preds, all_events, classes=classes, tolerances_sec=TIGHT_TOLERANCES)
+    out = {"val_" + k: v for k, v in loose.items()}
+    out["val_tight_avg_mAP"] = tight["avg_mAP"]
+    out["val_tight_mAP@1s"] = tight.get("mAP@1s", 0.0)
+    out["val_tight_mAP@5s"] = tight.get("mAP@5s", 0.0)
+    return out
 
 
 def _dataset_from_config(
@@ -234,26 +299,32 @@ def main() -> None:
 
     model = build_model(cfg).to(device)
     criterion = build_loss(cfg).to(device)
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=float(train_cfg.get("lr", 3e-4)),
-        weight_decay=float(train_cfg.get("weight_decay", 1e-4)),
-    )
+    lr = float(train_cfg.get("lr", 3e-4))
+    wd = float(train_cfg.get("weight_decay", 1e-4))
+    if str(train_cfg.get("optimizer", "adamw")).lower() == "sam":
+        sam_rho = float(train_cfg.get("sam_rho", 0.05))
+        optimizer = SAM(model.parameters(), torch.optim.AdamW, rho=sam_rho, lr=lr, weight_decay=wd)
+        print(f"Optimizer : SAM(AdamW, rho={sam_rho})")
+    else:
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
     epochs = int(train_cfg.get("epochs", 30))
     warmup_epochs = int(train_cfg.get("warmup_epochs", 0))
+    # SAM : le scheduler doit être lié au base_optimizer (celui qui appelle .step()
+    # réellement) pour que PyTorch ne lève pas de UserWarning sur l'ordre des appels.
+    sched_opt = optimizer.base_optimizer if isinstance(optimizer, SAM) else optimizer
     if warmup_epochs > 0:
         warmup_sched = torch.optim.lr_scheduler.LinearLR(
-            optimizer, start_factor=1e-6, end_factor=1.0, total_iters=warmup_epochs
+            sched_opt, start_factor=1e-6, end_factor=1.0, total_iters=warmup_epochs
         )
         cosine_sched = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=max(1, epochs - warmup_epochs)
+            sched_opt, T_max=max(1, epochs - warmup_epochs)
         )
         scheduler = torch.optim.lr_scheduler.SequentialLR(
-            optimizer, schedulers=[warmup_sched, cosine_sched], milestones=[warmup_epochs]
+            sched_opt, schedulers=[warmup_sched, cosine_sched], milestones=[warmup_epochs]
         )
         print(f"Scheduler : LinearLR warmup {warmup_epochs} epochs → CosineAnnealingLR {epochs - warmup_epochs} epochs")
     else:
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(sched_opt, T_max=epochs)
 
     best_val_loss = math.inf
     best_val_map = -math.inf
@@ -265,6 +336,8 @@ def main() -> None:
         steps = 0
         if train_sampler is not None:
             train_sampler.set_epoch(epoch)
+        use_sam = isinstance(optimizer, SAM)
+        grad_clip = train_cfg.get("grad_clip_norm", 1.0)
         pbar = tqdm(train_loader, desc=f"epoch {epoch}")
         for batch in pbar:
             batch = move_batch_to_device(batch, device)
@@ -272,10 +345,18 @@ def main() -> None:
             outputs = model(batch["x"])
             losses = criterion(outputs, batch)
             losses["loss"].backward()
-            grad_clip = train_cfg.get("grad_clip_norm", 1.0)
             if grad_clip is not None:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), float(grad_clip))
-            optimizer.step()
+            if use_sam:
+                optimizer.first_step(zero_grad=True)
+                outputs = model(batch["x"])
+                losses = criterion(outputs, batch)
+                losses["loss"].backward()
+                if grad_clip is not None:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), float(grad_clip))
+                optimizer.second_step(zero_grad=True)
+            else:
+                optimizer.step()
             steps += 1
             for key in running:
                 running[key] += float(losses[key].detach().cpu())

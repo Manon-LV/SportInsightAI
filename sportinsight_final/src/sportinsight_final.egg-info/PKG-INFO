@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: sportinsight-final
+Version: 0.1.0
+Summary: SportInsight Final — Dense anchor spotter with official SoccerNet split
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.23
+Requires-Dist: pandas>=1.5
+Requires-Dist: PyYAML>=6.0
+Requires-Dist: tqdm>=4.65
+Requires-Dist: torch>=2.0
+Requires-Dist: fastapi>=0.110
+Requires-Dist: uvicorn>=0.27
+Requires-Dist: pydantic>=2.0

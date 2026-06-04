@@ -1,0 +1,100 @@
+# 17 classes officielles SoccerNet v2 — comparable aux résultats publiés
+#
+# Basé sur calf_10_slim_tdrop_sam.yaml (meilleure architecture connue) :
+#   slim (hidden_dim=96, num_layers=2, no GRU)
+#   + Temporal Dropout (ptd=0.5, ASTRA 2024)
+#   + SAM optimizer (rho=0.05)
+#
+# Changements vs calf_10_slim_tdrop_sam.yaml :
+#   classes      : 10 → 17 (ordre officiel SoccerNet v2)
+#   class_weights: recalculés 1/sqrt(N) normalisé Foul=1.0
+#   output_dir   : runs/calf_17_slim_tdrop_sam
+#
+# Classes ajoutées : Kick-off, Clearance, Ball out of play,
+#                    Throw-in, Indirect free-kick, Direct free-kick, Yellow->red card
+#
+# Poids des classes rares : Red card=14.4, Yellow->red card=17.2, Penalty=8.6
+# Ball out of play (28.7% du train) et Throw-in (17.1%) reçoivent un poids faible (0.6/0.8)
+
+data:
+  root: "data/SoccerNet"
+  train_split_file: "splits/train.txt"
+  val_split_file: "splits/valid.txt"
+  test_split_file: "splits/test.txt"
+  classes:
+    - "Penalty"
+    - "Kick-off"
+    - "Goal"
+    - "Substitution"
+    - "Offside"
+    - "Shots on target"
+    - "Shots off target"
+    - "Clearance"
+    - "Ball out of play"
+    - "Throw-in"
+    - "Foul"
+    - "Indirect free-kick"
+    - "Direct free-kick"
+    - "Corner"
+    - "Yellow card"
+    - "Red card"
+    - "Yellow->red card"
+  feature_fps: 2.0
+  window_size_sec: 120.0
+  stride_sec: 60.0
+  positive_radius_sec: 2.0
+  ignore_radius_sec: 5.0
+  imbalance_strategy: "class_stratified"
+  cache_features: false
+
+model:
+  input_dim: 512
+  hidden_dim: 96
+  use_projection: true
+  num_layers: 2
+  dropout: 0.35
+  backbone: "unet"
+  max_offset_sec: 5.0
+  use_attention_bottleneck: true
+  temporal_neck: "none"
+  temporal_dropout_p: 0.5
+
+loss:
+  type: "calf"
+  margin_before_sec: 20.0
+  positive_radius_sec: 2.0
+  k_before: 0.5
+  k_after: 1.0
+  k_bg: 1.0
+  lambda_cls: 1.0
+  lambda_reg: 0.5
+  focal_gamma: 1.2
+  # Ordre : Penalty Kick-off Goal Substitution Offside SoT SoffT Clearance
+  #         BallOut Throw-in Foul IndirectFK DirectFK Corner Ycard Rcard YRcard
+  class_weights: [8.6, 2.2, 2.7, 2.0, 2.4, 1.4, 1.5, 1.2, 0.6, 0.8, 1.0, 1.1, 2.3, 1.6, 2.4, 14.4, 17.2]
+
+train:
+  epochs: 25
+  batch_size: 16
+  num_workers: 0
+  optimizer: "sam"
+  sam_rho: 0.05
+  lr: 0.0003
+  warmup_epochs: 3
+  weight_decay: 0.02
+  grad_clip_norm: 1.0
+  seed: 42
+  device: "auto"
+  output_dir: "runs/calf_17_slim_tdrop_sam"
+  validate_every: 1
+  map_every: 5
+  plot_every: 1
+
+postprocess:
+  score_threshold: 0.15
+  nms_radius_sec: 6.0
+  max_predictions_per_class: 200
+  use_soft_nms: false
+
+metrics:
+  tolerances_sec: [5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0]
