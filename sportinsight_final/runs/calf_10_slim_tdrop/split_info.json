@@ -1,0 +1,20 @@
+{
+  "strategy": "match_split_files",
+  "train_split_file": "splits/train.txt",
+  "val_split_file": "splits/valid.txt",
+  "test_split_file": "splits/test.txt",
+  "integrity": {
+    "counts": {
+      "train": 300,
+      "valid": 100,
+      "test": 100
+    },
+    "overlap_count": 0,
+    "overlaps": [],
+    "is_disjoint": true
+  },
+  "train_windows": 27023,
+  "val_windows": 8981,
+  "train_games": 300,
+  "val_games": 100
+}
