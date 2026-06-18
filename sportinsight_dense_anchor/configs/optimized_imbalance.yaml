@@ -1,0 +1,82 @@
+# Configuration optimisée pour imbalance: Mixup + Class Weights + ASL
+
+data:
+  root: "data/SoccerNet"      
+  train_split_file: "splits/train.txt"
+  val_split_file: "splits/valid.txt"
+  test_split_file: "splits/test.txt"
+  classes: ["Goal", "Corner", "Yellow card", "Red card"]
+  feature_fps: 2.0
+  window_size_sec: 120.0
+  stride_sec: 60.0
+  positive_radius_sec: 2.0
+  ignore_radius_sec: 5.0
+  cache_features: false
+  # NEW: Utiliser un sampler équilibré au lieu de simpler downsample/oversample
+  imbalance_strategy: "none"
+  # Seront remplacés par BalancedWindowSampler après analyse des classes
+  neg_pos_ratio: 3.0
+
+model:
+  input_dim: 512
+  hidden_dim: 256
+  num_layers: 3
+  dropout: 0.20
+  backbone: "unet"
+  max_offset_sec: 5.0
+
+# NEW: Loss optimisée pour l'imbalance multi-label
+loss:
+  type: "asl"  # Asymmetric Loss - meilleure pour multi-label imbalance
+  lambda_cls: 1.0
+  lambda_reg: 0.5
+  # Sera rempli automatiquement par analyze_class_distribution
+  class_weights: null
+  # ASL-specific
+  gamma_pos: 1.0
+  gamma_neg: 4.0
+  prob_shift: 0.05
+
+train:
+  epochs: 40  # +10 epochs pour meilleure convergence
+  batch_size: 16
+  num_workers: 0
+  lr: 0.0003
+  weight_decay: 0.0001
+  grad_clip_norm: 1.0
+  seed: 42
+  device: "auto"
+  output_dir: "runs/optimized_imbalance"
+  validate_every: 1
+  plot_every: 1
+  max_val_games: null
+
+# NEW: Augmentation pipeline
+augmentation:
+  enabled: true
+  # Mixup: Mélange linéaire d'exemples pour généralisation
+  mixup:
+    enabled: true
+    alpha: 0.2        # Beta(α, α) - plus petit = moins de mélange
+    apply_prob: 0.5   # Appliquer 50% du temps
+  # CutMix: Remplacement temporel (optionnel, peut être agressif)
+  cutmix:
+    enabled: false
+    apply_prob: 0.3
+  # Label smoothing: Target softer pour réduire overfitting
+  label_smoothing:
+    alpha: 0.1        # ~10% de lissage
+
+postprocess:
+  score_threshold: 0.30
+  nms_radius_sec: 6.0
+  max_predictions_per_class: 200
+
+# Sampler configuration (utilisé après analyse des données)
+sampler:
+  type: "balanced_window"  # or "balanced_batch"
+  neg_pos_ratio: 3.0       # Ratio négatifs/positifs
+  shuffle: true
+  seed: 42
+  # Pour balanced_batch sampler:
+  # num_pos_per_batch: 4   # 4 positifs par batch de 16
