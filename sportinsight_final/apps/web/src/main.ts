@@ -8,6 +8,6 @@ import App from './App.vue'
 createApp(App)
   .use(Quasar, {
     plugins: { Notify },
-    config: { dark: true }
+    config: { dark: false }
   })
   .mount('#app')

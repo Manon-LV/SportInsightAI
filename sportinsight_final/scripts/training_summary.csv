@@ -1,2 +1,0 @@
-best_epoch_by_val_loss,best_val_loss,best_val_loss_cls,best_val_loss_reg,final_epoch,final_train_loss,final_val_loss,min_train_loss,train_loss_reduction_pct,val_loss_reduction_pct,final_generalization_gap
-26,0.0354966995399954,0.0016077669310145,0.0677778649993863,30,0.0062959095460285,0.0359584745810569,0.0060987313812206,96.37565415129147,72.12017049311686,0.029662565035028402

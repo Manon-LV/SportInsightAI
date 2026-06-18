@@ -1,114 +1,85 @@
 <template>
   <q-card class="glass-panel contrast-panel control-panel" flat>
-    <q-card-section class="row items-center q-col-gutter-sm q-py-sm">
+    <q-card-section class="row items-center no-wrap q-gutter-sm q-py-sm q-px-md">
 
-      <!-- Titre + chips statut -->
-      <div class="col-12 col-lg-auto">
-        <div class="row items-center q-gutter-sm no-wrap">
-          <q-icon name="sports_soccer" color="cyan" size="22px" />
-          <div>
-            <div class="text-subtitle1 text-weight-bold match-title">{{ matchTitle }}</div>
-            <div class="row q-gutter-xs q-mt-none">
-              <q-chip dense square color="cyan-9" text-color="white" size="xs">Split test</q-chip>
-              <q-chip dense square color="deep-purple-8" text-color="white" size="xs">Seuil {{ local.score_threshold.toFixed(2) }}</q-chip>
-              <q-chip dense square color="amber-8" text-color="black" size="xs">{{ local.selected_classes.length }} classes</q-chip>
-              <q-icon v-if="splitIntegrity?.is_disjoint" name="verified" color="positive" size="14px" class="self-center" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <q-icon name="sports_soccer" color="cyan-8" size="20px" class="col-auto" />
 
       <!-- Sélecteur de match -->
-      <div class="col-12 col-lg">
-        <q-select
-          v-model="selectedTestMatch"
-          dark
-          dense
-          outlined
-          emit-value
-          map-options
-          clearable
-          use-input
-          input-debounce="0"
-          label="Match du split test"
-          :options="filteredMatchOptions"
-          :loading="matchesLoading"
-          @filter="filterMatches"
-          @update:model-value="handleSelectMatch"
-        >
-          <template #prepend><q-icon name="search" /></template>
-          <template #no-option>
-            <q-item>
-              <q-item-section class="text-blue-grey-2">
-                Aucun match test — crée d'abord <code>splits/test.txt</code>.
-              </q-item-section>
-            </q-item>
-          </template>
-          <template #hint>{{ testMatches.length }} matchs disponibles</template>
-        </q-select>
-      </div>
+      <q-select
+        class="col"
+        v-model="selectedTestMatch"
+        dense
+        outlined
+        emit-value
+        map-options
+        clearable
+        use-input
+        input-debounce="0"
+        label="Match du split test"
+        :options="filteredMatchOptions"
+        :loading="matchesLoading"
+        @filter="filterMatches"
+        @update:model-value="handleSelectMatch"
+      >
+        <template #prepend><q-icon name="search" size="16px" /></template>
+        <template #no-option>
+          <q-item>
+            <q-item-section class="text-blue-grey-6">
+              Aucun match — crée d'abord <code>splits/test.txt</code>.
+            </q-item-section>
+          </q-item>
+        </template>
+      </q-select>
 
       <!-- Boutons d'action -->
-      <div class="col-12 col-lg-auto row q-gutter-xs items-center">
+      <div class="col-auto row q-gutter-xs no-wrap items-center">
         <q-btn
-          color="cyan" text-color="black" unelevated no-caps
+          color="cyan-8" text-color="white" unelevated no-caps
           icon="play_arrow" label="Analyser"
           :loading="loading"
           @click="$emit('run', cloneRequest(local))"
         />
         <q-btn
-          outline color="amber" no-caps
+          flat color="blue-grey-7" no-caps
+          icon="tune" label="Paramètres"
+          @click="advancedOpen = true"
+        />
+        <q-btn
+          flat color="blue-grey-7" no-caps
           icon="science" label="Démo"
           @click="$emit('load-demo')"
         />
-        <q-btn
-          flat color="cyan-2" round dense
-          icon="tune"
-          @click="advancedOpen = !advancedOpen"
-        >
-          <q-tooltip>Paramètres</q-tooltip>
-        </q-btn>
       </div>
     </q-card-section>
 
-    <!-- Paramètres avancés (collapsible) -->
-    <q-slide-transition>
-      <div v-show="advancedOpen">
-        <q-separator dark />
-        <q-card-section class="advanced-grid">
+    <!-- Dialog paramètres -->
+    <q-dialog v-model="advancedOpen">
+      <q-card class="params-dialog">
+        <q-card-section class="row items-center justify-between q-pb-xs">
+          <div class="text-subtitle1 text-weight-bold">Paramètres</div>
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="q-gutter-md">
           <div class="row q-col-gutter-md">
 
             <!-- Colonne gauche : split info + checkpoint + import -->
-            <div class="col-12 col-lg-7 q-gutter-sm">
-              <div class="split-box q-pa-sm">
-                <div class="row items-center justify-between q-mb-xs">
-                  <div class="text-caption text-cyan-3 text-weight-bold">Protocole de split</div>
-                  <q-btn dense flat color="cyan" icon="refresh" size="xs" no-caps @click="loadTestMatches" />
-                </div>
-                <div class="row q-gutter-xs">
-                  <q-chip v-for="split in splits" :key="split.name" dense square size="xs"
-                    :color="split.exists ? 'blue-grey-8' : 'red-10'" text-color="white">
-                    {{ split.name }} · {{ split.count }}
-                  </q-chip>
-                </div>
-                <div v-if="splitIntegrity && !splitIntegrity.is_disjoint" class="text-caption text-red-3 q-mt-xs">
-                  Attention : chevauchement détecté entre les splits.
-                </div>
-              </div>
+            <div class="col-12 col-sm-7 q-gutter-sm">
+<q-input v-model="local.checkpoint" dense outlined label="Checkpoint (.pt)" />
 
-              <q-input v-model="local.checkpoint" dark dense outlined label="Checkpoint (.pt)" />
-
-              <q-file v-model="predictionFile" dark dense outlined accept=".json,application/json"
+              <q-file v-model="predictionFile" dense outlined accept=".json,application/json"
                 label="Importer predictions JSON" @update:model-value="handlePredictionFile">
                 <template #prepend><q-icon name="upload_file" /></template>
               </q-file>
             </div>
 
             <!-- Colonne droite : contrôles d'analyse -->
-            <div class="col-12 col-lg-5 q-gutter-sm">
+            <div class="col-12 col-sm-5 q-gutter-sm">
               <q-btn-toggle
                 v-model="local.half" spread no-caps rounded unelevated
-                toggle-color="cyan" text-color="white" color="blue-grey-10"
+                toggle-color="cyan-8" text-color="white" color="blue-grey-3"
                 :options="[
                   { label: '1re mi-temps', value: 'first' },
                   { label: '2e mi-temps', value: 'second' },
@@ -117,39 +88,70 @@
               />
 
               <div>
-                <div class="row items-center justify-between">
+                <div class="row items-center justify-between q-mb-xs">
                   <span class="text-caption">Seuil score</span>
-                  <span class="mono text-caption">{{ local.score_threshold.toFixed(2) }}</span>
+                  <input
+                    v-model.number="local.score_threshold"
+                    type="number" min="0.05" max="0.95" step="0.01"
+                    class="slider-input"
+                    @change="e => local.score_threshold = Math.min(0.95, Math.max(0.05, +(e.target as HTMLInputElement).value || 0.05))"
+                  />
                 </div>
-                <q-slider v-model="local.score_threshold" color="cyan" :min="0.05" :max="0.95" :step="0.01" dense />
+                <q-slider v-model="local.score_threshold" color="cyan-8" :min="0.05" :max="0.95" :step="0.01" dense />
               </div>
 
               <div>
-                <div class="row items-center justify-between">
+                <div class="row items-center justify-between q-mb-xs">
                   <span class="text-caption">NMS temporelle</span>
-                  <span class="mono text-caption">{{ local.nms_radius_sec.toFixed(1) }} s</span>
+                  <input
+                    v-model.number="local.nms_radius_sec"
+                    type="number" min="1" max="20" step="0.5"
+                    class="slider-input"
+                    @change="e => local.nms_radius_sec = Math.min(20, Math.max(1, +(e.target as HTMLInputElement).value || 1))"
+                  />
                 </div>
-                <q-slider v-model="local.nms_radius_sec" color="amber" :min="1" :max="20" :step="0.5" dense />
+                <q-slider v-model="local.nms_radius_sec" color="amber-8" :min="1" :max="20" :step="0.5" dense />
               </div>
 
-              <q-option-group
-                v-model="local.selected_classes" type="checkbox"
-                :options="classOptions" color="cyan" dark dense
-              />
+              <q-select
+                v-model="local.selected_classes"
+                :options="classOptions"
+                option-value="value"
+                option-label="label"
+                emit-value
+                map-options
+                multiple
+                use-chips
+                dense
+                outlined
+                label="Classes détectées"
+                color="cyan-8"
+              >
+                <template #before-options>
+                  <q-item dense clickable @click="toggleAllClasses">
+                    <q-item-section>
+                      <q-item-label class="text-caption text-cyan-8">
+                        {{ local.selected_classes.length === classOptions.length ? 'Tout désélectionner' : 'Tout sélectionner' }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-separator />
+                </template>
+              </q-select>
             </div>
           </div>
         </q-card-section>
-      </div>
-    </q-slide-transition>
+      </q-card>
+    </q-dialog>
   </q-card>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { Notify } from 'quasar'
-import type { InferenceRequest, MatchSummary, SplitIntegrityResponse, SplitSummary } from '../types/predictions'
+import type { InferenceRequest, MatchSummary } from '../types/predictions'
 import { PRODUCT_CLASSES } from '../types/predictions'
-import { getSplitIntegrity, getSplitMatches, getSplits } from '../services/api'
+import { getSplitMatches } from '../services/api'
 
 const props = defineProps<{
   loading: boolean
@@ -168,15 +170,7 @@ const matchOptions = ref<Array<{ label: string; value: string; caption: string }
 const filteredMatchOptions = ref<Array<{ label: string; value: string; caption: string }>>([])
 const matchesLoading = ref(false)
 const selectedTestMatch = ref<string | null>(null)
-const splits = ref<SplitSummary[]>([])
-const splitIntegrity = ref<SplitIntegrityResponse | null>(null)
-
 const classOptions = PRODUCT_CLASSES.map((label) => ({ label, value: label }))
-
-const matchTitle = computed(() => {
-  const parts = local.match_dir.split(/[\\/]/).filter(Boolean)
-  return parts.at(-1) ?? 'Match SoccerNet'
-})
 
 const emit = defineEmits<{
   run: [payload: InferenceRequest]
@@ -189,13 +183,7 @@ onMounted(() => { void loadTestMatches() })
 async function loadTestMatches() {
   matchesLoading.value = true
   try {
-    const [splitRows, integrity, matches] = await Promise.all([
-      getSplits('splits'),
-      getSplitIntegrity('splits'),
-      getSplitMatches('test', 'data/SoccerNet', 'splits', 500)
-    ])
-    splits.value = splitRows
-    splitIntegrity.value = integrity
+    const matches = await getSplitMatches('test', 'data/SoccerNet', 'splits', 500)
     testMatches.value = matches
     const usable = matches.filter((m) => m.has_first_half || m.has_second_half)
     matchOptions.value = usable.map((m) => ({
@@ -212,6 +200,14 @@ async function loadTestMatches() {
     Notify.create({ type: 'warning', message: error instanceof Error ? error.message : 'Impossible de charger les matchs test' })
   } finally {
     matchesLoading.value = false
+  }
+}
+
+function toggleAllClasses() {
+  if (local.selected_classes.length === classOptions.length) {
+    local.selected_classes = []
+  } else {
+    local.selected_classes = classOptions.map((o) => o.value)
   }
 }
 
@@ -241,19 +237,31 @@ async function handlePredictionFile(file: File | null) {
 </script>
 
 <style scoped>
-.match-title {
-  max-width: 280px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.params-dialog {
+  width: 680px;
+  max-width: 95vw;
 }
-.advanced-grid {
-  background: rgba(2, 6, 23, 0.42);
-  border-top: 1px solid rgba(56, 189, 248, 0.18);
+.slider-input {
+  width: 64px;
+  border: none;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.25);
+  background: transparent;
+  text-align: right;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: #0f172a;
+  padding: 1px 2px;
+  outline: none;
 }
-.split-box {
-  border: 1px solid rgba(34, 211, 238, 0.24);
-  border-radius: 12px;
-  background: rgba(8, 47, 73, 0.22);
+.slider-input:focus {
+  border-bottom-color: #0891b2;
+}
+.slider-input::-webkit-inner-spin-button,
+.slider-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.slider-input[type=number] {
+  -moz-appearance: textfield;
 }
 </style>

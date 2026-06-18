@@ -246,8 +246,8 @@ async def upload_video(
         # Lire les données de la vidéo
         video_data = await file.read()
         
-        # Sauvegarder le fichier
-        result = save_video_file(job_id, half, video_data)
+        # Sauvegarder le fichier (préserver l'extension originale)
+        result = save_video_file(job_id, half, video_data, original_filename=file.filename or "")
         
         return result
     

@@ -77,27 +77,29 @@ def get_upload_job(job_id: str) -> UploadJob | None:
         return _JOBS.get(job_id)
 
 
-def save_video_file(job_id: str, half: int, video_data: bytes) -> dict:
+def save_video_file(job_id: str, half: int, video_data: bytes, original_filename: str = "") -> dict:
     """Sauvegarde un fichier vidéo et retourne les informations."""
     with _LOCK:
         job = _JOBS.get(job_id)
         if not job:
             raise ValueError(f"Job d'upload non trouvé: {job_id}")
-        
+
         if half not in (1, 2):
             raise ValueError("La mi-temps doit être 1 ou 2")
-        
+
         # Créer le dossier du match
         if not job.match_dir:
             match_upload_dir = UPLOADS_DIR / job_id / job.match_name
             match_upload_dir.mkdir(parents=True, exist_ok=True)
             job.match_dir = str(match_upload_dir)
-        
-        # Déterminer l'extension basée sur les données (simple heuristique)
-        extension = ".mp4"  # par défaut
-        
+
+        # Préserver l'extension du fichier original
+        ext = Path(original_filename).suffix.lower() if original_filename else ".mp4"
+        if ext not in {".mp4", ".mkv", ".webm", ".mov", ".avi", ".m4v"}:
+            ext = ".mp4"
+
         # Sauvegarder la vidéo
-        video_path = Path(job.match_dir) / f"{half}{extension}"
+        video_path = Path(job.match_dir) / f"{half}{ext}"
         with open(video_path, "wb") as f:
             f.write(video_data)
         

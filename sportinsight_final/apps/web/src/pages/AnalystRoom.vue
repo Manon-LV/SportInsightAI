@@ -4,14 +4,16 @@
       <q-toolbar class="q-px-lg">
         <q-toolbar-title>
           <span class="text-weight-bold">SportInsight</span>
-          <span class="text-blue-2"> AI</span>
+          <span class="text-blue-8"> AI</span>
         </q-toolbar-title>
-        <q-badge color="cyan" text-color="black">Jalon 5</q-badge>
+        <q-btn flat no-caps color="blue-8" icon="leaderboard" label="Performances" @click="perfOpen = true" />
       </q-toolbar>
     </q-header>
 
     <q-page-container>
       <q-page class="q-pa-md">
+        <PerformancePanel v-model="perfOpen" :run-id="runId" />
+
         <ControlPanel
           class="q-mb-sm"
           :initial-request="request"
@@ -23,11 +25,9 @@
 
         <div class="row q-col-gutter-md">
           <div class="col-12 col-lg-8">
-            <TimelineView :events="events" :selected="selected" @select="selected = $event" />
+            <TimelineView :events="events" :selected="selected" :summary="summary" @select="selected = $event" />
           </div>
-
-          <div class="col-12 col-lg-4 column q-gutter-sm">
-            <ReportPanel :summary="summary" :events="events" />
+          <div class="col-12 col-lg-4">
             <EventPanel :events="events" :selected="selected" :match-dir="request.match_dir" @select="selected = $event" />
           </div>
         </div>
@@ -37,16 +37,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Notify } from 'quasar'
 import ControlPanel from '../components/ControlPanel.vue'
 import EventPanel from '../components/EventPanel.vue'
-import ReportPanel from '../components/ReportPanel.vue'
+import PerformancePanel from '../components/PerformancePanel.vue'
 import TimelineView from '../components/TimelineView.vue'
 import { loadDemoPredictions, runInference } from '../services/api'
 import type { EventPrediction, InferenceRequest, RunSummary } from '../types/predictions'
 
-// Props pour les matchs uploadés
 const props = defineProps<{
   initialMatchDir?: string
   initialCheckpoint?: string
@@ -54,16 +53,17 @@ const props = defineProps<{
 }>()
 
 const DEFAULT_CLASSES = [
-  'Goal', 'Corner', 'Yellow card', 'Red card',
-  'Penalty', 'Substitution', 'Offside', 'Foul',
-  'Shots on target', 'Shots off target',
+  'Penalty', 'Kick-off', 'Goal', 'Substitution',
+  'Offside', 'Shots on target', 'Shots off target', 'Clearance',
+  'Ball out of play', 'Throw-in', 'Foul', 'Indirect free-kick',
+  'Direct free-kick', 'Corner', 'Yellow card', 'Red card', 'Yellow->red card',
 ]
 
 const request = ref<InferenceRequest>({
   match_dir: 'data/SoccerNet/england_epl/2014-2015/2015-02-21 - 18-00 Chelsea 1 - 1 Burnley',
-  checkpoint: 'runs/calf_10/best.pt',
+  checkpoint: 'runs/calf_17_slim_tdrop_sam/best.pt',
   half: 'both',
-  score_threshold: 0.3,
+  score_threshold: 0.7,
   nms_radius_sec: 6.0,
   selected_classes: [...DEFAULT_CLASSES],
   device: 'auto'
@@ -73,12 +73,17 @@ const events = ref<EventPrediction[]>([])
 const selected = ref<EventPrediction | null>(null)
 const summary = ref<RunSummary | null>(null)
 const loading = ref(false)
+const perfOpen = ref(false)
 
-// Initialiser avec les props si fournis (upload de vidéo)
+const runId = computed(() => {
+  const parts = request.value.checkpoint.replace(/\\/g, '/').split('/')
+  return parts.length >= 2 ? parts[1] : parts[0]
+})
+
+// Props pour les matchs uploadés via VideoUploader
 watch(() => props.initialMatchDir, (newVal) => {
   if (newVal) {
     request.value.match_dir = newVal
-    // Lancer automatiquement l'inférence quand un nouveau match est défini
     triggerAutoAnalysis()
   }
 }, { immediate: true })
@@ -94,6 +99,14 @@ watch(() => props.initialScoreThreshold, (newVal) => {
     request.value.score_threshold = newVal
   }
 }, { immediate: true })
+
+async function triggerAutoAnalysis() {
+  if (!props.initialMatchDir || !props.initialCheckpoint || loading.value) {
+    return
+  }
+  await new Promise(resolve => setTimeout(resolve, 100))
+  await handleRun(request.value)
+}
 
 function isEventPrediction(raw: unknown): raw is EventPrediction {
   const event = raw as Partial<EventPrediction>
@@ -136,20 +149,6 @@ function applyEvents(loadedEvents: EventPrediction[], runId: string, source: str
   summary.value = buildSummary(runId, source, loadedEvents)
 }
 
-// Déclencher automatiquement l'analyse pour un match uploadé
-async function triggerAutoAnalysis() {
-  // Vérifier que les deux props soient définis et qu'on ne soit pas déjà en cours d'analyse
-  if (!props.initialMatchDir || !props.initialCheckpoint || loading.value) {
-    return
-  }
-  
-  // Attendre un peu pour que le component soit bien rendu
-  await new Promise(resolve => setTimeout(resolve, 100))
-  
-  // Lancer l'inférence
-  await handleRun(request.value)
-}
-
 async function handleRun(payload: InferenceRequest) {
   loading.value = true
   selected.value = null
@@ -159,7 +158,7 @@ async function handleRun(payload: InferenceRequest) {
     events.value = response.events
     summary.value = response.summary
     selected.value = response.events[0] ?? null
-    
+
     if (response.events.length === 0) {
       Notify.create({
         type: 'warning',

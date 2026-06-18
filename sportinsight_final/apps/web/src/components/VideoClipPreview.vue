@@ -1,43 +1,25 @@
 <template>
   <q-card class="video-card" flat>
-    <q-card-section class="row items-center justify-between q-pb-sm">
-      <div>
-        <div class="text-overline text-cyan-3">Extrait vidéo</div>
-        <div class="text-subtitle1 text-weight-bold">
-          {{ event ? `${event.label} · ${event.gameTime}` : 'Aucune action sélectionnée' }}
-        </div>
-      </div>
-      <q-chip v-if="halfInfo?.available" dense square color="cyan-9" text-color="white">
-        {{ halfInfo.name }}
-      </q-chip>
+    <q-card-section v-if="!event" class="text-blue-grey-6 q-py-xs">
+      Sélectionne une action pour afficher l'extrait correspondant.
     </q-card-section>
 
-    <q-separator dark />
-
-    <q-card-section v-if="!event" class="text-blue-grey-2">
-      Sélectionne une action pour afficher l’extrait correspondant.
-    </q-card-section>
-
-    <q-card-section v-else-if="loading" class="row items-center q-gutter-sm text-blue-grey-2">
-      <q-spinner color="cyan" />
+    <q-card-section v-else-if="loading" class="row items-center q-gutter-sm text-blue-grey-6 q-py-sm">
+      <q-spinner color="amber-8" />
       <span>Recherche des vidéos locales…</span>
     </q-card-section>
 
-    <q-card-section v-else-if="!halfInfo?.available" class="q-gutter-sm">
-      <q-banner rounded class="bg-blue-grey-10 text-blue-grey-2">
+    <q-card-section v-else-if="!halfInfo?.available" class="q-gutter-sm q-py-sm">
+      <q-banner rounded class="banner-missing">
         <template #avatar>
-          <q-icon name="videocam_off" color="amber" />
+          <q-icon name="videocam_off" color="amber-8" />
         </template>
-        Aucune vidéo n’a été détectée pour la mi-temps {{ event.half }}.
-        Ajoute les fichiers vidéo dans le dossier du match, par exemple
-        <code>1.mp4</code>/<code>1.mkv</code> et <code>2.mp4</code>/<code>2.mkv</code>.
+        Aucune vidéo détectée pour la mi-temps {{ event.half }}.
+        Ajoute <code>1.mp4</code>/<code>1.mkv</code> et <code>2.mp4</code>/<code>2.mkv</code> dans le dossier du match.
       </q-banner>
-      <div class="text-caption text-blue-grey-4">
-        Les features <code>.npy</code> suffisent pour l’inférence, mais elles ne permettent pas de reconstruire l’image vidéo.
-      </div>
     </q-card-section>
 
-    <q-card-section v-else class="q-gutter-md">
+    <q-card-section v-else class="q-gutter-sm q-py-sm">
       <video
         ref="videoRef"
         :key="videoKey"
@@ -49,44 +31,15 @@
         @error="videoError = true"
       />
 
-      <q-banner v-if="videoError" rounded class="bg-deep-orange-10 text-orange-1">
+      <q-banner v-if="videoError" rounded class="banner-error">
         <template #avatar>
-          <q-icon name="warning" color="orange" />
+          <q-icon name="warning" color="deep-orange-7" />
         </template>
-        Le navigateur n’arrive pas à lire ce format vidéo. Si le fichier est en <code>.mkv</code>, convertis-le en
-        <code>.mp4</code> pour la démonstration.
+        Impossible de lire ce format. Convertis le fichier en <code>.mp4</code>.
       </q-banner>
 
-      <div class="row q-col-gutter-sm">
-        <div class="col-12 col-sm-6">
-          <q-btn
-            outline
-            dense
-            no-caps
-            icon="replay_10"
-            color="cyan"
-            label="Revenir au début de l’extrait"
-            class="full-width"
-            @click="seekToClipStart"
-          />
-        </div>
-        <div class="col-12 col-sm-6">
-          <q-btn
-            outline
-            dense
-            no-caps
-            icon="play_arrow"
-            color="amber"
-            label="Lire autour de l’action"
-            class="full-width"
-            @click="playClip"
-          />
-        </div>
-      </div>
-
-      <div class="text-caption text-blue-grey-3">
-        Fenêtre affichée : {{ clipStart.toFixed(1) }} s → {{ clipEnd.toFixed(1) }} s dans la mi-temps {{ event.half }}.
-      </div>
+      <q-btn outline dense no-caps size="sm" icon="play_arrow" color="amber-8"
+        label="Rejouer l'extrait" @click="playClip" />
     </q-card-section>
   </q-card>
 </template>
@@ -151,7 +104,7 @@ async function seekToClipStart() {
     videoRef.value.currentTime = clipStart.value
     videoError.value = false
   } catch {
-    // Le navigateur peut refuser le seek tant que les métadonnées ne sont pas chargées.
+    // seek possible seulement après chargement des métadonnées
   }
 }
 
@@ -161,7 +114,7 @@ async function playClip() {
   try {
     await videoRef.value.play()
   } catch {
-    Notify.create({ type: 'warning', message: 'Lecture automatique bloquée par le navigateur. Utilise le bouton lecture du lecteur vidéo.' })
+    Notify.create({ type: 'warning', message: 'Lecture automatique bloquée par le navigateur.' })
   }
 }
 
@@ -174,22 +127,31 @@ watch(() => props.event, () => {
 
 <style scoped>
 .video-card {
-  background: linear-gradient(135deg, rgba(8, 47, 73, 0.72), rgba(12, 18, 33, 0.94));
-  border: 1px solid rgba(34, 211, 238, 0.24);
-  border-radius: 18px;
+  background: transparent;
+  border: none;
+  border-radius: 14px;
   overflow: hidden;
 }
 .clip-video {
   width: 100%;
-  min-height: 220px;
-  max-height: 420px;
-  border-radius: 14px;
-  background: #020617;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  max-height: 320px;
+  border-radius: 10px;
+  background: rgba(120, 53, 15, 0.06);
+  border: 1px solid rgba(217, 119, 6, 0.20);
+}
+.banner-missing {
+  background: rgba(254, 243, 199, 0.60);
+  color: #78350f;
+  border: 1px solid rgba(217, 119, 6, 0.22);
+}
+.banner-error {
+  background: rgba(255, 237, 213, 0.70);
+  color: #7c2d12;
+  border: 1px solid rgba(234, 88, 12, 0.22);
 }
 code {
-  color: #67e8f9;
-  background: rgba(15, 23, 42, 0.9);
+  color: #b45309;
+  background: rgba(254, 243, 199, 0.80);
   padding: 0 4px;
   border-radius: 4px;
 }

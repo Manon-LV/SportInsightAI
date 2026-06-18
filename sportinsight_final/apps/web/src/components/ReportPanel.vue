@@ -1,31 +1,22 @@
 <template>
   <q-card class="glass-panel contrast-panel report-panel" flat>
-    <q-card-section class="q-py-sm">
-      <div v-if="summary" class="row items-center q-col-gutter-sm">
-        <div class="col-12 col-lg">
-          <div class="text-subtitle2 text-weight-bold">{{ headline }}</div>
-          <div class="text-caption text-blue-grey-3">{{ halfLabel }}</div>
-        </div>
-        <div class="col-12 col-lg-auto row q-gutter-xs items-center">
-          <q-chip dense square color="green-8" text-color="white" icon="sports_soccer">
-            {{ countFor('Goal') }}
-          </q-chip>
-          <q-chip dense square color="amber-9" text-color="black" icon="style">
-            {{ cardsCount }}
-          </q-chip>
-          <q-chip dense square color="cyan-8" text-color="black" icon="gps_fixed">
-            {{ shotsCount }}
-          </q-chip>
-          <q-chip dense square color="blue-grey-7" text-color="white">
-            {{ events.length }} actions
-          </q-chip>
-          <q-chip dense square color="purple-8" text-color="white" size="xs">
-            {{ summary.run_id }}
-          </q-chip>
-        </div>
+    <q-card-section class="row items-center justify-between q-py-sm q-px-md">
+      <div class="text-caption text-blue-grey-6">
+        {{ summary ? halfLabel : 'Lance une analyse pour afficher le résumé.' }}
       </div>
-      <div v-else class="text-caption text-blue-grey-3">
-        Lance une analyse pour afficher le résumé.
+      <div v-if="summary" class="row q-gutter-xs items-center">
+        <q-chip dense square color="green-8" text-color="white" icon="sports_soccer">
+          {{ countFor('Goal') }}
+        </q-chip>
+        <q-chip dense square color="amber-9" text-color="black" icon="style">
+          {{ cardsCount }}
+        </q-chip>
+        <q-chip dense square color="cyan-8" text-color="white" icon="gps_fixed">
+          {{ shotsCount }}
+        </q-chip>
+        <q-chip dense square color="blue-grey-6" text-color="white">
+          {{ events.length }} actions
+        </q-chip>
       </div>
     </q-card-section>
   </q-card>
@@ -54,13 +45,5 @@ const halfLabel = computed(() => {
     props.summary.half === 'both' ? 'Match complet' :
     props.summary.half === 'first' ? '1re mi-temps' : '2e mi-temps'
   return `${half} · ${match}`
-})
-
-const headline = computed(() => {
-  if (!props.summary) return ''
-  const g = countFor('Goal')
-  const c = cardsCount.value
-  const s = shotsCount.value
-  return `${props.events.length} actions · ${g} but${g > 1 ? 's' : ''} · ${c} carton${c > 1 ? 's' : ''} · ${s} tir${s > 1 ? 's' : ''}`
 })
 </script>

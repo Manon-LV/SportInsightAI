@@ -78,14 +78,21 @@ export interface InferenceResponse {
 }
 
 export const PRODUCT_CLASSES = [
+  'Penalty',
+  'Kick-off',
   'Goal',
+  'Substitution',
+  'Offside',
+  'Shots on target',
+  'Shots off target',
+  'Clearance',
+  'Ball out of play',
+  'Throw-in',
+  'Foul',
+  'Indirect free-kick',
+  'Direct free-kick',
   'Corner',
   'Yellow card',
   'Red card',
-  'Penalty',
-  'Substitution',
-  'Offside',
-  'Foul',
-  'Shots on target',
-  'Shots off target',
+  'Yellow->red card',
 ]

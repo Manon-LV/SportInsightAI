@@ -72,6 +72,18 @@ export function buildVideoUrl(matchDir: string, half: number, startSec?: number,
   return base
 }
 
+export function getRunPlotUrl(runId: string, plotName: string): string {
+  return `${API_BASE_URL}/runs/${encodeURIComponent(runId)}/plot/${encodeURIComponent(plotName)}`
+}
+
+export function getRunEval(runId: string): Promise<Record<string, unknown>> {
+  return requestJson<Record<string, unknown>>(`/runs/${encodeURIComponent(runId)}/eval`)
+}
+
+export function getRunOfficialEval(runId: string, split = 'test'): Promise<Record<string, unknown>> {
+  return requestJson<Record<string, unknown>>(`/runs/${encodeURIComponent(runId)}/official-eval?split=${split}`)
+}
+
 export function buildClipUrl(payload: ClipRequest): string {
   const params = new URLSearchParams()
   params.set('match_dir', payload.match_dir)

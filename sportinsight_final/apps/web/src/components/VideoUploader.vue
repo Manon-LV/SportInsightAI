@@ -334,6 +334,66 @@
         </div>
       </div>
 
+      <!-- Étape 2b: Upload vidéos optionnelles -->
+      <div class="q-mb-lg">
+        <div class="text-subtitle2 text-weight-bold q-mb-md">
+          2b. Vidéos du match (optionnel — pour la lecture dans l'interface)
+        </div>
+        <div class="text-caption text-grey-7 q-mb-md">
+          Ajoutez les vidéos .mkv/.mp4 pour visualiser les extraits dans l'AnalystRoom
+        </div>
+
+        <!-- Vidéo Mi-temps 1 -->
+        <div class="q-mb-md">
+          <div class="text-body2 q-mb-sm">Vidéo Mi-temps 1 (.mkv / .mp4)</div>
+          <div
+            class="upload-zone"
+            :class="{ 'upload-zone-hover': dragOverVideo1, 'upload-zone-success': videoOptFile1 }"
+            @dragover.prevent="dragOverVideo1 = true"
+            @dragleave.prevent="dragOverVideo1 = false"
+            @drop.prevent="handleDropVideo1"
+          >
+            <div v-if="!videoOptFile1" class="text-center q-py-md">
+              <q-icon name="movie" size="2em" class="text-grey-5 q-mb-sm" />
+              <div class="text-body2 text-grey-6">Glissez-déposez la vidéo</div>
+              <q-btn flat size="sm" label="Sélectionner" @click="selectVideoOpt1" :disable="uploading" class="q-mt-sm" />
+            </div>
+            <div v-else class="text-center q-py-sm">
+              <q-icon name="check_circle" size="1.5em" class="text-positive q-mb-xs" />
+              <div class="text-body2 text-weight-bold">{{ videoOptFile1.name }}</div>
+              <div class="text-caption text-grey-7">{{ formatFileSize(videoOptFile1.size) }}</div>
+              <q-btn flat size="sm" label="Changer" @click="selectVideoOpt1" :disable="uploading" />
+            </div>
+          </div>
+          <input ref="inputVideoOpt1" type="file" accept="video/*" style="display:none" @change="handleFileVideoOpt1" />
+        </div>
+
+        <!-- Vidéo Mi-temps 2 -->
+        <div class="q-mb-md">
+          <div class="text-body2 q-mb-sm">Vidéo Mi-temps 2 (.mkv / .mp4)</div>
+          <div
+            class="upload-zone"
+            :class="{ 'upload-zone-hover': dragOverVideo2, 'upload-zone-success': videoOptFile2 }"
+            @dragover.prevent="dragOverVideo2 = true"
+            @dragleave.prevent="dragOverVideo2 = false"
+            @drop.prevent="handleDropVideo2"
+          >
+            <div v-if="!videoOptFile2" class="text-center q-py-md">
+              <q-icon name="movie" size="2em" class="text-grey-5 q-mb-sm" />
+              <div class="text-body2 text-grey-6">Glissez-déposez la vidéo</div>
+              <q-btn flat size="sm" label="Sélectionner" @click="selectVideoOpt2" :disable="uploading" class="q-mt-sm" />
+            </div>
+            <div v-else class="text-center q-py-sm">
+              <q-icon name="check_circle" size="1.5em" class="text-positive q-mb-xs" />
+              <div class="text-body2 text-weight-bold">{{ videoOptFile2.name }}</div>
+              <div class="text-caption text-grey-7">{{ formatFileSize(videoOptFile2.size) }}</div>
+              <q-btn flat size="sm" label="Changer" @click="selectVideoOpt2" :disable="uploading" />
+            </div>
+          </div>
+          <input ref="inputVideoOpt2" type="file" accept="video/*" style="display:none" @change="handleFileVideoOpt2" />
+        </div>
+      </div>
+
       <!-- Sélection du checkpoint -->
       <div class="q-mb-lg">
         <div class="text-subtitle2 text-weight-bold q-mb-md">
@@ -473,6 +533,12 @@ const scoreThreshold = ref(0.3) // Nouveau: seuil de confiance
 const featuresFile1 = ref<File | null>(null)
 const featuresFile2 = ref<File | null>(null)
 
+// Vidéos optionnelles (mode features)
+const videoOptFile1 = ref<File | null>(null)
+const videoOptFile2 = ref<File | null>(null)
+const dragOverVideo1 = ref(false)
+const dragOverVideo2 = ref(false)
+
 // État de l'upload
 const uploading = ref(false)
 const uploadProgress = ref(0)
@@ -493,6 +559,8 @@ const inputHalf1 = ref<HTMLInputElement>()
 const inputHalf2 = ref<HTMLInputElement>()
 const inputFeatures1 = ref<HTMLInputElement>()
 const inputFeatures2 = ref<HTMLInputElement>()
+const inputVideoOpt1 = ref<HTMLInputElement>()
+const inputVideoOpt2 = ref<HTMLInputElement>()
 
 // Options
 const checkpointOptions = ref<Array<{ label: string; value: string }>>([])
@@ -593,7 +661,7 @@ async function handleUpload() {
     uploadMessage.value = 'Préparation des fichiers'
     uploadProgress.value = 65
     const finalized = await finalizeUpload(jobId.value)
-    matchDir.value = finalized.match_dir
+    matchDir.value = finalized.match_dir || ''
     jobStatus.value = 'processing'
 
     // 5. Extraire features
@@ -666,6 +734,8 @@ function reset() {
   videoFile2.value = null
   featuresFile1.value = null
   featuresFile2.value = null
+  videoOptFile1.value = null
+  videoOptFile2.value = null
   uploading.value = false
   uploadProgress.value = 0
   uploadStep.value = ''
@@ -713,6 +783,29 @@ function handleDropFeatures2(event: DragEvent) {
   }
 }
 
+function selectVideoOpt1() { inputVideoOpt1.value?.click() }
+function selectVideoOpt2() { inputVideoOpt2.value?.click() }
+
+function handleFileVideoOpt1(event: Event) {
+  const files = (event.target as HTMLInputElement).files
+  if (files?.[0]) videoOptFile1.value = files[0]
+}
+
+function handleFileVideoOpt2(event: Event) {
+  const files = (event.target as HTMLInputElement).files
+  if (files?.[0]) videoOptFile2.value = files[0]
+}
+
+function handleDropVideo1(event: DragEvent) {
+  dragOverVideo1.value = false
+  if (event.dataTransfer?.files[0]) videoOptFile1.value = event.dataTransfer.files[0]
+}
+
+function handleDropVideo2(event: DragEvent) {
+  dragOverVideo2.value = false
+  if (event.dataTransfer?.files[0]) videoOptFile2.value = event.dataTransfer.files[0]
+}
+
 async function handleFeaturesImport() {
   if (!canImportFeatures.value) return
 
@@ -737,8 +830,22 @@ async function handleFeaturesImport() {
     // 3. Upload features 2
     uploadStep.value = 'Import features mi-temps 2...'
     uploadMessage.value = `Import de ${featuresFile2.value!.name} (${formatFileSize(featuresFile2.value!.size)})`
-    uploadProgress.value = 80
+    uploadProgress.value = 70
     await uploadFeaturesFile(jobId.value, 2, featuresFile2.value!)
+
+    // 4. Upload vidéos optionnelles
+    if (videoOptFile1.value) {
+      uploadStep.value = 'Upload vidéo mi-temps 1...'
+      uploadMessage.value = `Upload de ${videoOptFile1.value.name} (${formatFileSize(videoOptFile1.value.size)})`
+      uploadProgress.value = 80
+      await uploadVideo(jobId.value, 1, videoOptFile1.value)
+    }
+    if (videoOptFile2.value) {
+      uploadStep.value = 'Upload vidéo mi-temps 2...'
+      uploadMessage.value = `Upload de ${videoOptFile2.value.name} (${formatFileSize(videoOptFile2.value.size)})`
+      uploadProgress.value = 90
+      await uploadVideo(jobId.value, 2, videoOptFile2.value)
+    }
 
     const status = await getUploadStatus(jobId.value)
     matchDir.value = status.match_dir || ''
@@ -783,7 +890,7 @@ onMounted(async () => {
 
 // Emit
 const emit = defineEmits<{
-  analyze: [{ match_dir: string; checkpoint: string }]
+  analyze: [{ match_dir: string; checkpoint: string; score_threshold?: number }]
 }>()
 </script>
 
