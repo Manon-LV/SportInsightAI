@@ -59,7 +59,32 @@ def find_feature_file(game_dir: str | Path, half: int) -> Path | None:
 
 def load_features(path: str | Path) -> np.ndarray:
     arr = np.load(path)
-    return ensure_2d_features(arr)
+    arr = ensure_2d_features(arr)
+    
+    # Si les features ne sont pas en 512 dimensions, les réduire avec PCA
+    if arr.shape[1] != 512:
+        arr = _apply_pca_512(arr)
+    
+    return arr
+
+
+def _apply_pca_512(features: np.ndarray) -> np.ndarray:
+    """
+    Applique une réduction PCA à 512 dimensions.
+    Utilisé pour convertir les features 2048-dim (ResNET brut) vers 512-dim (PCA512).
+    """
+    try:
+        from sklearn.decomposition import PCA
+        pca = PCA(n_components=512, random_state=42)
+        return pca.fit_transform(features).astype(np.float32)
+    except ImportError:
+        # SVD manuelle si sklearn n'est pas disponible
+        mean = np.mean(features, axis=0, keepdims=True)
+        centered = features - mean
+        U, S, Vt = np.linalg.svd(centered, full_matrices=False)
+        n_components = min(512, U.shape[1])
+        U_reduced = U[:, :n_components]
+        return (U_reduced * S[:n_components]).astype(np.float32)
 
 
 class SoccerNetDenseAnchorDataset(Dataset):

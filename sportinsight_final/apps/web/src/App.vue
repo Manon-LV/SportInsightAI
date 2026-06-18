@@ -1,7 +1,7 @@
 <template>
-  <AnalystRoom />
+  <MainMenu />
 </template>
 
 <script setup lang="ts">
-import AnalystRoom from './pages/AnalystRoom.vue'
+import MainMenu from './pages/MainMenu.vue'
 </script>

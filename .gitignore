@@ -216,3 +216,54 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Machine Learning & Data Files
+**/data/
+**/runs/
+**/checkpoints/
+**/storage/
+**/uploads/
+**/*.pt
+**/*.pth
+**/*.h5
+**/*.pkl
+**/*.pickle
+**/*.npy
+**/*.npz
+experiments/
+path/
+
+# Large video files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.flv
+*.webm
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Node.js / npm
+node_modules/
+dist/
+build/
+.npm
+package-lock.json.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files (local config)
+.env
+.env.local
+.env.*.local
+
+# SportInsight specific
+**/sportinsight*.egg-info/
+**/.egg-info/

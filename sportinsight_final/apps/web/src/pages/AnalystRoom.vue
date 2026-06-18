@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, defineProps, watch } from 'vue'
 import { Notify } from 'quasar'
 import ControlPanel from '../components/ControlPanel.vue'
 import EventPanel from '../components/EventPanel.vue'
@@ -45,6 +45,13 @@ import ReportPanel from '../components/ReportPanel.vue'
 import TimelineView from '../components/TimelineView.vue'
 import { loadDemoPredictions, runInference } from '../services/api'
 import type { EventPrediction, InferenceRequest, RunSummary } from '../types/predictions'
+
+// Props pour les matchs uploadés
+const props = defineProps<{
+  initialMatchDir?: string
+  initialCheckpoint?: string
+  initialScoreThreshold?: number
+}>()
 
 const DEFAULT_CLASSES = [
   'Goal', 'Corner', 'Yellow card', 'Red card',
@@ -66,6 +73,27 @@ const events = ref<EventPrediction[]>([])
 const selected = ref<EventPrediction | null>(null)
 const summary = ref<RunSummary | null>(null)
 const loading = ref(false)
+
+// Initialiser avec les props si fournis (upload de vidéo)
+watch(() => props.initialMatchDir, (newVal) => {
+  if (newVal) {
+    request.value.match_dir = newVal
+    // Lancer automatiquement l'inférence quand un nouveau match est défini
+    triggerAutoAnalysis()
+  }
+}, { immediate: true })
+
+watch(() => props.initialCheckpoint, (newVal) => {
+  if (newVal) {
+    request.value.checkpoint = newVal
+  }
+}, { immediate: true })
+
+watch(() => props.initialScoreThreshold, (newVal) => {
+  if (newVal !== undefined) {
+    request.value.score_threshold = newVal
+  }
+}, { immediate: true })
 
 function isEventPrediction(raw: unknown): raw is EventPrediction {
   const event = raw as Partial<EventPrediction>
@@ -106,6 +134,20 @@ function applyEvents(loadedEvents: EventPrediction[], runId: string, source: str
   events.value = loadedEvents
   selected.value = loadedEvents[0] ?? null
   summary.value = buildSummary(runId, source, loadedEvents)
+}
+
+// Déclencher automatiquement l'analyse pour un match uploadé
+async function triggerAutoAnalysis() {
+  // Vérifier que les deux props soient définis et qu'on ne soit pas déjà en cours d'analyse
+  if (!props.initialMatchDir || !props.initialCheckpoint || loading.value) {
+    return
+  }
+  
+  // Attendre un peu pour que le component soit bien rendu
+  await new Promise(resolve => setTimeout(resolve, 100))
+  
+  // Lancer l'inférence
+  await handleRun(request.value)
 }
 
 async function handleRun(payload: InferenceRequest) {

@@ -116,3 +116,34 @@ class InferenceResponse(BaseModel):
     run_id: str
     events: list[EventPrediction]
     summary: RunSummary
+
+
+class UploadStatus(BaseModel):
+    job_id: str
+    status: Literal["uploading", "processing", "done", "error"]
+    created_at: str
+    updated_at: str
+    match_name: str
+    half_1_path: str | None = None
+    half_2_path: str | None = None
+    half_1_size: int = 0
+    half_2_size: int = 0
+    features_status: Literal["pending", "extracting", "done", "error"] = "pending"
+    match_dir: str | None = None
+    message: str
+    error: str | None = None
+
+
+class VideoUploadResponse(BaseModel):
+    job_id: str
+    half: int
+    path: str
+    size: int
+
+
+class FeaturesExtractionStatus(BaseModel):
+    job_id: str
+    status: Literal["success", "error"]
+    message: str
+    match_dir: str | None = None
+    halves: dict[int, dict] = {}

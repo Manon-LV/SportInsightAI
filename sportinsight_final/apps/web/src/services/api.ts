@@ -82,3 +82,146 @@ export function buildClipUrl(payload: ClipRequest): string {
   return `${API_BASE_URL}/media/clip?${params.toString()}`
 }
 
+// ============================================================================
+// Upload et Features API
+// ============================================================================
+
+export interface UploadJobInfo {
+  job_id: string
+  message: string
+}
+
+export interface UploadStatus {
+  job_id: string
+  status: string
+  match_name: string
+  half_1_path: string | null
+  half_2_path: string | null
+  half_1_size: number
+  half_2_size: number
+  features_status: string
+  match_dir: string | null
+  message: string
+  error: string | null
+}
+
+export interface CheckpointInfo {
+  id: string
+  path: string
+  name: string
+}
+
+export async function createUploadJob(matchName: string): Promise<UploadJobInfo> {
+  const formData = new FormData()
+  formData.append('match_name', matchName)
+
+  const response = await fetch(`${API_BASE_URL}/upload/create`, {
+    method: 'POST',
+    body: formData
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || `HTTP ${response.status}`)
+  }
+
+  return response.json() as Promise<UploadJobInfo>
+}
+
+export async function uploadVideo(jobId: string, half: number, file: File): Promise<void> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`${API_BASE_URL}/upload/${jobId}/video/${half}`, {
+    method: 'POST',
+    body: formData
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || `HTTP ${response.status}`)
+  }
+}
+
+export async function finalizeUpload(jobId: string): Promise<UploadStatus> {
+  const response = await fetch(`${API_BASE_URL}/upload/${jobId}/finalize`, {
+    method: 'POST'
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || `HTTP ${response.status}`)
+  }
+
+  return response.json() as Promise<UploadStatus>
+}
+
+export async function extractFeatures(jobId: string, fps: number = 2.0, device: string = 'auto'): Promise<void> {
+  const params = new URLSearchParams()
+  params.set('fps', String(fps))
+  params.set('device', device)
+
+  const response = await fetch(`${API_BASE_URL}/upload/${jobId}/extract-features?${params.toString()}`, {
+    method: 'POST'
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || `HTTP ${response.status}`)
+  }
+}
+
+export async function getUploadStatus(jobId: string): Promise<UploadStatus> {
+  return requestJson<UploadStatus>(`/upload/${jobId}`)
+}
+
+export async function listCheckpoints(): Promise<CheckpointInfo[]> {
+  return requestJson<CheckpointInfo[]>('/checkpoints')
+}
+
+export async function deleteUploadJob(jobId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/upload/${jobId}`, {
+    method: 'DELETE'
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || `HTTP ${response.status}`)
+  }
+}
+
+export async function uploadFeaturesFile(jobId: string, half: number, file: File): Promise<UploadStatus> {
+  const formData = new FormData()
+  formData.append('half', String(half))
+  formData.append('file', file)
+
+  const response = await fetch(`${API_BASE_URL}/upload/${jobId}/upload-features`, {
+    method: 'POST',
+    body: formData
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || `HTTP ${response.status}`)
+  }
+
+  return response.json() as Promise<UploadStatus>
+}
+
+export async function importFeatures(jobId: string, files: Record<string, string>): Promise<any> {
+  const formData = new FormData()
+  formData.append('files', JSON.stringify(files))
+
+  const response = await fetch(`${API_BASE_URL}/upload/${jobId}/import-features`, {
+    method: 'POST',
+    body: formData
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || `HTTP ${response.status}`)
+  }
+
+  return response.json()
+}
+
